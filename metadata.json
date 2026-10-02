@@ -1,0 +1,6 @@
+{
+  "name": "SUPPLYINTEL - AI Supply Chain Control Tower & Digital Twin",
+  "description": "Enterprise AI supply-chain intelligence platform with 3D digital twin, predictive risk analytics, demand forecasting, disruption propagation simulation, and AI decision recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
