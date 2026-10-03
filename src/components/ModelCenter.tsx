@@ -12,11 +12,20 @@ export const ModelCenter: React.FC = () => {
       .catch(console.error);
   }, []);
 
-  const handleRetrain = (modelName: string) => {
+  const handleRetrain = async (modelName: string) => {
     setRetrainingModel(modelName);
-    setTimeout(() => {
-      setRetrainingModel(null);
-    }, 2000);
+    try {
+      await fetch('/api/retrain', { method: 'POST' });
+      const res = await fetch('/api/model-performance');
+      const data = await res.json();
+      setModels(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTimeout(() => {
+        setRetrainingModel(null);
+      }, 1500);
+    }
   };
 
   return (

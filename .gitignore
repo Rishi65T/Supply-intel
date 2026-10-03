@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+bun.lock
+*.db
+*.sqlite
+__pycache__/
+*.pyc
+mlruns/
+.chroma/

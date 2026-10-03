@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { KPIGrid } from './components/KPIGrid';
@@ -19,6 +19,7 @@ import { DataIngestionView } from './components/DataIngestionView';
 import { SettingsView } from './components/SettingsView';
 import { EntityDrawer } from './components/EntityDrawer';
 import { AIAdvisorModal } from './components/AIAdvisorModal';
+import { LoginPage } from './components/LoginPage';
 import { Globe, Share2, Sparkles } from 'lucide-react';
 
 export default function App() {
@@ -26,6 +27,42 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any | null>(null);
+
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return !!localStorage.getItem('supplyintel_user');
+  });
+
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    const saved = localStorage.getItem('supplyintel_user');
+    return saved ? JSON.parse(saved) : {
+      username: 'commander',
+      fullName: 'Rajiv Malhotra',
+      role: 'Strategic Logistics Commander',
+      department: 'National Supply Chain Directorate',
+      email: 'commander@supplyintel.ai'
+    };
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem('supplyintel_user');
+    localStorage.removeItem('supplyintel_token');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <LoginPage 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        }}
+        onBypass={() => {
+          setIsAuthenticated(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#060910] text-[#F8FAFC] font-sans overflow-hidden">
@@ -48,6 +85,9 @@ export default function App() {
           onOpenAI={() => setIsAiModalOpen(true)}
           activeTab={activeTab}
           onSelectEntity={(entity) => setSelectedEntity(entity)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onOpenLogin={() => setIsAuthenticated(false)}
         />
 
         {/* Scrollable Viewport */}

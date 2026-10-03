@@ -1,0 +1,18 @@
+{
+  "include": [
+    "backend",
+    "database",
+    "ml",
+    "rag",
+    "tests"
+  ],
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Windows",
+  "typeCheckingMode": "off",
+  "reportMissingImports": "none",
+  "extraPaths": [
+    "C:/Users/Administrator/AppData/Local/Programs/Python/Python311/Lib/site-packages",
+    "C:/Users/Administrator/AppData/Local/Programs/Python/Python311/Lib",
+    "."
+  ]
+}

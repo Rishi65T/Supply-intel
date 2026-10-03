@@ -16,7 +16,8 @@ import {
   Activity,
   Anchor,
   Radio,
-  Check
+  Check,
+  Tag
 } from 'lucide-react';
 import { MapboxIndiaInfrastructure } from './MapboxIndiaInfrastructure';
 
@@ -37,6 +38,19 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
   const [showRoad, setShowRoad] = useState(true);
   const [showMaritime, setShowMaritime] = useState(true);
   const [showAir, setShowAir] = useState(true);
+  const [showVehicleBadges, setShowVehicleBadges] = useState(true);
+
+  const showRailRef = useRef(showRail);
+  const showRoadRef = useRef(showRoad);
+  const showMaritimeRef = useRef(showMaritime);
+  const showAirRef = useRef(showAir);
+  const showVehicleBadgesRef = useRef(showVehicleBadges);
+
+  useEffect(() => { showRailRef.current = showRail; }, [showRail]);
+  useEffect(() => { showRoadRef.current = showRoad; }, [showRoad]);
+  useEffect(() => { showMaritimeRef.current = showMaritime; }, [showMaritime]);
+  useEffect(() => { showAirRef.current = showAir; }, [showAir]);
+  useEffect(() => { showVehicleBadgesRef.current = showVehicleBadges; }, [showVehicleBadges]);
 
   // GSAP 3D Progress States for Light-Trail Markers across Modalities
   const gsapProgressRef = useRef({
@@ -267,7 +281,7 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(renderer.domElement);
 
     // --- Lighting ---
@@ -480,14 +494,445 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
     airLineGroup.add(drawTrackLine(arcAirBomHyd, 0x38bdf8, true, 0.85));
     scene.add(airLineGroup);
 
+    // --- DETAILED 3D VEHICLE GEOMETRIES & HIGH-RES HUD BILLBOARD BADGES ---
+    const disposables: { dispose: () => void }[] = [];
+
+    const drawRoundedRect = (
+      ctx: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      r: number
+    ) => {
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(x, y, w, h, r);
+      } else {
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+      }
+    };
+
+    // Canvas Texture Generator for Camera-Facing Vehicle HUD Badge with Flight & Truck Icons
+    const createVehicleBadgeTexture = (
+      iconType: 'train' | 'truck' | 'ship' | 'plane',
+      label: string,
+      subLabel: string,
+      colorHexStr: string
+    ): THREE.CanvasTexture => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return new THREE.CanvasTexture(canvas);
+
+      // Glassmorphic Outer Card
+      const w = 496;
+      const h = 184;
+      const x = 8;
+      const y = 8;
+      const radius = 22;
+
+      // Glow Shadow
+      ctx.save();
+      ctx.shadowColor = colorHexStr;
+      ctx.shadowBlur = 22;
+      ctx.fillStyle = 'rgba(6, 12, 24, 0.94)';
+      ctx.beginPath();
+      drawRoundedRect(ctx, x, y, w, h, radius);
+      ctx.fill();
+      ctx.restore();
+
+      // Neon Border
+      ctx.strokeStyle = colorHexStr;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      drawRoundedRect(ctx, x, y, w, h, radius);
+      ctx.stroke();
+
+      // Glass highlight gradient
+      const grad = ctx.createLinearGradient(0, y, 0, y + h);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.14)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      drawRoundedRect(ctx, x + 3, y + 3, w - 6, h - 6, radius - 2);
+      ctx.fill();
+
+      // Left Shield Circle with Vehicle Image / Icon
+      const iconCx = 88;
+      const iconCy = 100;
+      const iconR = 56;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(12, 22, 42, 0.96)';
+      ctx.beginPath();
+      ctx.arc(iconCx, iconCy, iconR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = colorHexStr;
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = colorHexStr;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw Vehicle Graphics
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (iconType === 'plane') {
+        // High-contrast Airplane Silhouette & Icon
+        ctx.font = '64px system-ui, sans-serif';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('✈️', iconCx, iconCy);
+      } else if (iconType === 'truck') {
+        // High-contrast Freight Truck Silhouette & Icon
+        ctx.font = '60px system-ui, sans-serif';
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('🚚', iconCx, iconCy);
+      } else if (iconType === 'ship') {
+        ctx.font = '60px system-ui, sans-serif';
+        ctx.shadowColor = '#f43f5e';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('🚢', iconCx, iconCy);
+      } else if (iconType === 'train') {
+        ctx.font = '60px system-ui, sans-serif';
+        ctx.shadowColor = '#22d3ee';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('🚆', iconCx, iconCy);
+      }
+      ctx.restore();
+
+      // Right Side Typography
+      const textX = 168;
+
+      // Status Pill: "● LIVE IN-TRANSIT"
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+      ctx.beginPath();
+      drawRoundedRect(ctx, textX, 24, 180, 26, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.font = 'bold 14px "Courier New", monospace';
+      ctx.fillStyle = '#34d399';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('● LIVE IN-TRANSIT', textX + 12, 37);
+
+      // Main Vehicle Title
+      ctx.font = '900 28px "Segoe UI", Inter, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.85)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(label, textX, 82);
+
+      // Subtitle / Route Info
+      ctx.font = 'bold 20px "Segoe UI", Inter, sans-serif';
+      ctx.fillStyle = colorHexStr;
+      ctx.shadowColor = colorHexStr;
+      ctx.shadowBlur = 8;
+      ctx.fillText(subLabel, textX, 120);
+
+      // Modality classification
+      ctx.font = '600 14px "Segoe UI", Inter, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.shadowBlur = 0;
+      const modeStr = iconType === 'plane' ? 'AIR FREIGHT CORRIDOR • FL360' :
+                      iconType === 'truck' ? 'NATIONAL HIGHWAY FREIGHT • FASTag' :
+                      iconType === 'ship' ? 'PENINSULAR MARITIME LANE' : 'DEDICATED FREIGHT CORRIDOR (DFC)';
+      ctx.fillText(modeStr, textX, 156);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    // 3D Airplane Mesh Model: Fuselage, Wings, Turbofan Engines, Tail Fin, Nav Lights
+    const buildPlaneMesh = (colorHex: number) => {
+      const plane = new THREE.Group();
+
+      const fuselageGeo = new THREE.CylinderGeometry(0.12, 0.14, 1.3, 16);
+      fuselageGeo.rotateX(Math.PI / 2);
+      const fuselageMat = new THREE.MeshStandardMaterial({
+        color: 0xf1f5f9,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+      const fuselage = new THREE.Mesh(fuselageGeo, fuselageMat);
+      plane.add(fuselage);
+
+      const noseGeo = new THREE.ConeGeometry(0.12, 0.35, 16);
+      noseGeo.rotateX(Math.PI / 2);
+      const noseMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3 });
+      const nose = new THREE.Mesh(noseGeo, noseMat);
+      nose.position.z = 0.82;
+      plane.add(nose);
+
+      const cockpitGeo = new THREE.BoxGeometry(0.14, 0.08, 0.18);
+      const cockpitMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+      const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
+      cockpit.position.set(0, 0.08, 0.65);
+      plane.add(cockpit);
+
+      const wingGeo = new THREE.BoxGeometry(1.7, 0.03, 0.38);
+      const wingMat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        metalness: 0.6,
+        roughness: 0.3
+      });
+      const wings = new THREE.Mesh(wingGeo, wingMat);
+      wings.position.set(0, 0.02, 0.05);
+      plane.add(wings);
+
+      const engineGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.32, 12);
+      engineGeo.rotateX(Math.PI / 2);
+      const engineMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 });
+      
+      const leftEngine = new THREE.Mesh(engineGeo, engineMat);
+      leftEngine.position.set(-0.45, -0.08, 0.05);
+      plane.add(leftEngine);
+
+      const rightEngine = new THREE.Mesh(engineGeo, engineMat);
+      rightEngine.position.set(0.45, -0.08, 0.05);
+      plane.add(rightEngine);
+
+      const finGeo = new THREE.BoxGeometry(0.03, 0.38, 0.3);
+      const finMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.7 });
+      const fin = new THREE.Mesh(finGeo, finMat);
+      fin.position.set(0, 0.22, -0.55);
+      plane.add(fin);
+
+      const tailHGeo = new THREE.BoxGeometry(0.65, 0.025, 0.2);
+      const tailHMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 });
+      const tailH = new THREE.Mesh(tailHGeo, tailHMat);
+      tailH.position.set(0, 0.06, -0.58);
+      plane.add(tailH);
+
+      // Wingtip Navigation Beacon Lights
+      const portLight = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xef4444 })
+      );
+      portLight.position.set(-0.85, 0.02, 0.05);
+      plane.add(portLight);
+
+      const stbdLight = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0x22c55e })
+      );
+      stbdLight.position.set(0.85, 0.02, 0.05);
+      plane.add(stbdLight);
+
+      return plane;
+    };
+
+    // 3D Freight Semi-Truck Mesh Model: Cab, Windshield, Air Spoiler, 40ft Container, Wheels, Lights
+    const buildTruckMesh = (colorHex: number) => {
+      const truck = new THREE.Group();
+
+      const cabGeo = new THREE.BoxGeometry(0.42, 0.44, 0.38);
+      const cabMat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        metalness: 0.8,
+        roughness: 0.25
+      });
+      const cab = new THREE.Mesh(cabGeo, cabMat);
+      cab.position.set(0, 0.24, 0.55);
+      truck.add(cab);
+
+      const windshieldGeo = new THREE.BoxGeometry(0.38, 0.16, 0.05);
+      const windshieldMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+      const windshield = new THREE.Mesh(windshieldGeo, windshieldMat);
+      windshield.position.set(0, 0.32, 0.74);
+      truck.add(windshield);
+
+      const spoilerGeo = new THREE.BoxGeometry(0.38, 0.1, 0.25);
+      const spoiler = new THREE.Mesh(spoilerGeo, cabMat);
+      spoiler.position.set(0, 0.48, 0.52);
+      truck.add(spoiler);
+
+      const trailerGeo = new THREE.BoxGeometry(0.44, 0.54, 1.25);
+      const trailerMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        metalness: 0.5,
+        roughness: 0.4
+      });
+      const trailer = new THREE.Mesh(trailerGeo, trailerMat);
+      trailer.position.set(0, 0.32, -0.28);
+      truck.add(trailer);
+
+      const stripeGeo = new THREE.BoxGeometry(0.45, 0.08, 1.2);
+      const stripeMat = new THREE.MeshBasicMaterial({ color: colorHex });
+      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+      stripe.position.set(0, 0.32, -0.28);
+      truck.add(stripe);
+
+      const chassisGeo = new THREE.BoxGeometry(0.36, 0.08, 1.8);
+      const chassisMat = new THREE.MeshStandardMaterial({ color: 0x090d16, metalness: 0.9 });
+      const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+      chassis.position.set(0, 0.08, 0.12);
+      truck.add(chassis);
+
+      const wheelGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.08, 12);
+      wheelGeo.rotateZ(Math.PI / 2);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.8 });
+
+      const wheelPositions = [
+        [-0.22, 0.09, 0.55], [0.22, 0.09, 0.55],
+        [-0.22, 0.09, -0.55], [0.22, 0.09, -0.55],
+        [-0.22, 0.09, -0.82], [0.22, 0.09, -0.82]
+      ];
+
+      wheelPositions.forEach(([wx, wy, wz]) => {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.position.set(wx, wy, wz);
+        truck.add(wheel);
+      });
+
+      const headlightGeo = new THREE.SphereGeometry(0.04, 8, 8);
+      const headlightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      const leftHeadlight = new THREE.Mesh(headlightGeo, headlightMat);
+      leftHeadlight.position.set(-0.16, 0.14, 0.74);
+      truck.add(leftHeadlight);
+
+      const rightHeadlight = new THREE.Mesh(headlightGeo, headlightMat);
+      rightHeadlight.position.set(0.16, 0.14, 0.74);
+      truck.add(rightHeadlight);
+
+      const taillightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+      const leftTail = new THREE.Mesh(headlightGeo, taillightMat);
+      leftTail.position.set(-0.18, 0.12, -0.91);
+      truck.add(leftTail);
+
+      const rightTail = new THREE.Mesh(headlightGeo, taillightMat);
+      rightTail.position.set(0.18, 0.12, -0.91);
+      truck.add(rightTail);
+
+      return truck;
+    };
+
+    // 3D Cargo Ship Mesh Model
+    const buildShipMesh = (colorHex: number) => {
+      const ship = new THREE.Group();
+
+      const hullGeo = new THREE.BoxGeometry(0.48, 0.28, 1.6);
+      const hullMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.6, roughness: 0.4 });
+      const hull = new THREE.Mesh(hullGeo, hullMat);
+      hull.position.set(0, 0.14, 0);
+      ship.add(hull);
+
+      const bowGeo = new THREE.ConeGeometry(0.24, 0.45, 4);
+      bowGeo.rotateX(Math.PI / 2);
+      const bow = new THREE.Mesh(bowGeo, hullMat);
+      bow.position.set(0, 0.14, 0.95);
+      bow.scale.set(1, 0.6, 1);
+      ship.add(bow);
+
+      const bridgeGeo = new THREE.BoxGeometry(0.38, 0.42, 0.35);
+      const bridgeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
+      const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+      bridge.position.set(0, 0.42, -0.5);
+      ship.add(bridge);
+
+      const containerColors = [0x0284c7, 0xf97316, 0x16a34a, 0xeab308];
+      for (let row = 0; row < 3; row++) {
+        for (let col = -1; col <= 1; col += 2) {
+          const cBox = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.16, 0.35),
+            new THREE.MeshStandardMaterial({ color: containerColors[(row + col + 4) % 4] })
+          );
+          cBox.position.set(col * 0.11, 0.34, 0.25 - row * 0.38);
+          ship.add(cBox);
+        }
+      }
+
+      return ship;
+    };
+
+    // 3D Freight Train Mesh Model
+    const buildTrainMesh = (colorHex: number) => {
+      const train = new THREE.Group();
+
+      const locoGeo = new THREE.BoxGeometry(0.38, 0.4, 0.85);
+      const locoMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.85, roughness: 0.2 });
+      const loco = new THREE.Mesh(locoGeo, locoMat);
+      loco.position.set(0, 0.22, 0.55);
+      train.add(loco);
+
+      const wGeo = new THREE.BoxGeometry(0.32, 0.12, 0.05);
+      const wMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+      const w = new THREE.Mesh(wGeo, wMat);
+      w.position.set(0, 0.28, 0.98);
+      train.add(w);
+
+      const pantoGeo = new THREE.BoxGeometry(0.18, 0.1, 0.22);
+      const pantoMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
+      const panto = new THREE.Mesh(pantoGeo, pantoMat);
+      panto.position.set(0, 0.46, 0.55);
+      train.add(panto);
+
+      const wagon1Geo = new THREE.BoxGeometry(0.36, 0.42, 0.8);
+      const wagon1Mat = new THREE.MeshStandardMaterial({ color: 0x0284c7 });
+      const wagon1 = new THREE.Mesh(wagon1Geo, wagon1Mat);
+      wagon1.position.set(0, 0.23, -0.35);
+      train.add(wagon1);
+
+      const wagon2Geo = new THREE.BoxGeometry(0.36, 0.42, 0.8);
+      const wagon2Mat = new THREE.MeshStandardMaterial({ color: 0x16a34a });
+      const wagon2 = new THREE.Mesh(wagon2Geo, wagon2Mat);
+      wagon2.position.set(0, 0.23, -1.22);
+      train.add(wagon2);
+
+      return train;
+    };
+
     // --- LIGHT-TRAIL MARKERS BUILDER ---
-    // Creates a glowing photon head + multi-node trailing tail representing freight motion
-    const createLightTrailMarker = (colorHex: number, tailColorHex: number, iconType: 'train' | 'truck' | 'ship' | 'plane') => {
+    // Creates a glowing photon head + 3D vehicle model + multi-node trailing tail + camera-facing HUD billboard badge
+    const createLightTrailMarker = (
+      colorHex: number,
+      tailColorHex: number,
+      iconType: 'train' | 'truck' | 'ship' | 'plane',
+      label: string,
+      subLabel: string,
+      colorHexStr: string
+    ) => {
       const group = new THREE.Group();
+
+      // Detailed 3D Geometric Vehicle Model with Enhanced Realism Scaling
+      let vehicleMesh: THREE.Group;
+      if (iconType === 'plane') {
+        vehicleMesh = buildPlaneMesh(colorHex);
+        vehicleMesh.scale.set(1.4, 1.4, 1.4);
+      } else if (iconType === 'truck') {
+        vehicleMesh = buildTruckMesh(colorHex);
+        vehicleMesh.scale.set(1.4, 1.4, 1.4);
+      } else if (iconType === 'ship') {
+        vehicleMesh = buildShipMesh(colorHex);
+        vehicleMesh.scale.set(1.3, 1.3, 1.3);
+      } else {
+        vehicleMesh = buildTrainMesh(colorHex);
+        vehicleMesh.scale.set(1.3, 1.3, 1.3);
+      }
+      group.add(vehicleMesh);
 
       // Leading Photon Head
       const headMat = new THREE.MeshBasicMaterial({ color: colorHex });
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), headMat);
+      head.position.set(0, 0.12, 0);
       group.add(head);
 
       // Trailing Light Nodes (Tail Stream)
@@ -505,68 +950,90 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
       }
 
       // Point Light for Local Atmospheric Glow
-      const glow = new THREE.PointLight(colorHex, 2.5, 4.5);
+      const glow = new THREE.PointLight(colorHex, 2.8, 5.0);
+      glow.position.set(0, 0.3, 0);
       group.add(glow);
 
-      // Optional 3D Geometry Core
-      if (iconType === 'train') {
-        const trainBox = new THREE.Mesh(
-          new THREE.BoxGeometry(0.7, 0.22, 0.22),
-          new THREE.MeshStandardMaterial({ color: 0x22d3ee, metalness: 0.9 })
-        );
-        trainBox.position.set(-0.25, 0.05, 0);
-        group.add(trainBox);
-      } else if (iconType === 'truck') {
-        const truckBox = new THREE.Mesh(
-          new THREE.BoxGeometry(0.5, 0.25, 0.25),
-          new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8 })
-        );
-        truckBox.position.set(-0.2, 0.05, 0);
-        group.add(truckBox);
-      } else if (iconType === 'ship') {
-        const shipHull = new THREE.Mesh(
-          new THREE.BoxGeometry(0.8, 0.2, 0.35),
-          new THREE.MeshStandardMaterial({ color: 0xf43f5e, metalness: 0.7 })
-        );
-        shipHull.position.set(-0.25, 0.05, 0);
-        group.add(shipHull);
-      } else if (iconType === 'plane') {
-        const wing = new THREE.Mesh(
-          new THREE.BoxGeometry(0.18, 0.02, 0.9),
-          new THREE.MeshStandardMaterial({ color: colorHex })
-        );
-        group.add(wing);
-      }
+      // Camera-Facing HUD Billboard Sprite with Vehicle Image & Route
+      const badgeTexture = createVehicleBadgeTexture(iconType, label, subLabel, colorHexStr);
+      disposables.push(badgeTexture);
 
-      return { group, tailSpheres, iconType };
+      const spriteMat = new THREE.SpriteMaterial({
+        map: badgeTexture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false
+      });
+      disposables.push(spriteMat);
+
+      const billboardSprite = new THREE.Sprite(spriteMat);
+      // Balanced scale: prominent image and label without crowding adjacent corridors
+      if (iconType === 'plane') {
+        billboardSprite.scale.set(2.8, 1.12, 1);
+      } else {
+        billboardSprite.scale.set(2.5, 1.0, 1);
+      }
+      scene.add(billboardSprite);
+
+      return { group, tailSpheres, iconType, billboardSprite };
     };
 
-    // Instantiate Modality Light-Trail Markers
-    // 1. Rail Light-Trails
-    const railTrailWestern = createLightTrailMarker(0x22d3ee, 0x67e8f9, 'train'); // CONCOR DFC West
-    const railTrailEastern = createLightTrailMarker(0x10b981, 0x34d399, 'train'); // Coal & Steel DFC East
+    // Instantiate Modality Light-Trail Markers with Distinct Vehicle Images & Models
+    // 1. Rail Light-Trails (Dedicated Freight Corridors)
+    const railTrailWestern = createLightTrailMarker(
+      0x22d3ee, 0x67e8f9, 'train',
+      'DFC EXPRESS (WAG-9)', 'DADRI ↔ JNPT • 78 km/h', '#22d3ee'
+    );
+    const railTrailEastern = createLightTrailMarker(
+      0x10b981, 0x34d399, 'train',
+      'EASTERN DFC FREIGHT', 'KHURJA ↔ DANKUNI • 72 km/h', '#10b981'
+    );
     scene.add(railTrailWestern.group);
     scene.add(railTrailEastern.group);
 
-    // 2. Road Light-Trails (Golden Quadrilateral)
-    const roadTrailDelhiMumbai = createLightTrailMarker(0xf59e0b, 0xfbbf24, 'truck');
-    const roadTrailMumbaiChennai = createLightTrailMarker(0x0284c7, 0x38bdf8, 'truck');
-    const roadTrailChennaiKolkata = createLightTrailMarker(0x06b6d4, 0x67e8f9, 'truck');
-    const roadTrailKolkataDelhi = createLightTrailMarker(0xeab308, 0xfde047, 'truck');
+    // 2. Road Light-Trails (Golden Quadrilateral Commercial Trucks)
+    const roadTrailDelhiMumbai = createLightTrailMarker(
+      0xf59e0b, 0xfbbf24, 'truck',
+      'FASTAG FREIGHT TRUCK', 'DELHI ↔ PUNE (NH-48) • 65 km/h', '#f59e0b'
+    );
+    const roadTrailMumbaiChennai = createLightTrailMarker(
+      0x0284c7, 0x38bdf8, 'truck',
+      'SOUTH CORRIDOR TRUCK', 'PUNE ↔ CHENNAI • 58 km/h', '#0284c7'
+    );
+    const roadTrailChennaiKolkata = createLightTrailMarker(
+      0x06b6d4, 0x67e8f9, 'truck',
+      'EAST COAST FREIGHT TRUCK', 'CHENNAI ↔ KOLKATA • 62 km/h', '#06b6d4'
+    );
+    const roadTrailKolkataDelhi = createLightTrailMarker(
+      0xeab308, 0xfde047, 'truck',
+      'GT HIGHWAY FREIGHT TRUCK', 'KOLKATA ↔ DELHI • 60 km/h', '#eab308'
+    );
     scene.add(roadTrailDelhiMumbai.group);
     scene.add(roadTrailMumbaiChennai.group);
     scene.add(roadTrailChennaiKolkata.group);
     scene.add(roadTrailKolkataDelhi.group);
 
-    // 3. Maritime Light-Trails
-    const maritimeTrailWest = createLightTrailMarker(0xf43f5e, 0xfb7185, 'ship'); // M.V. Samudra
-    const maritimeTrailEast = createLightTrailMarker(0xf43f5e, 0xfb7185, 'ship'); // East Coast Container
+    // 3. Maritime Light-Trails (Coastal Container Vessels)
+    const maritimeTrailWest = createLightTrailMarker(
+      0xf43f5e, 0xfb7185, 'ship',
+      'M.V. SAMUDRA CONTAINER', 'MUNDRA ↔ COCHIN • 18.2 kts', '#f43f5e'
+    );
+    const maritimeTrailEast = createLightTrailMarker(
+      0xf43f5e, 0xfb7185, 'ship',
+      'BAY OF BENGAL VESSEL', 'HALDIA ↔ CHENNAI • 16.5 kts', '#f43f5e'
+    );
     scene.add(maritimeTrailWest.group);
     scene.add(maritimeTrailEast.group);
 
-    // 4. Air Light-Trails
-    const airTrailDelBlr = createLightTrailMarker(0xa855f7, 0xc084fc, 'plane');
-    const airTrailBomHyd = createLightTrailMarker(0x38bdf8, 0x7dd3fc, 'plane');
+    // 4. Air Light-Trails (High-Altitude Air Cargo Flights)
+    const airTrailDelBlr = createLightTrailMarker(
+      0xa855f7, 0xc084fc, 'plane',
+      'AIR CARGO FLIGHT (B777F)', 'DEL ↔ BLR • FL360 • 850 km/h', '#a855f7'
+    );
+    const airTrailBomHyd = createLightTrailMarker(
+      0x38bdf8, 0x7dd3fc, 'plane',
+      'BLUE DART CARGO (B737F)', 'BOM ↔ HYD • FL320 • 780 km/h', '#38bdf8'
+    );
     scene.add(airTrailDelBlr.group);
     scene.add(airTrailBomHyd.group);
 
@@ -602,20 +1069,25 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
 
-    // Helper: Update Light-Trail Marker Position and Trailing Nodes along Curve
+    // Helper: Update Light-Trail Marker Position, Tangent Orientation and Billboard Sprite
     const updateTrailMarker = (
-      marker: { group: THREE.Group; tailSpheres: THREE.Mesh[] },
+      marker: { group: THREE.Group; tailSpheres: THREE.Mesh[]; billboardSprite: THREE.Sprite; iconType: 'train' | 'truck' | 'ship' | 'plane' },
       curve: THREE.Curve<THREE.Vector3>,
       progress: number,
       visible: boolean
     ) => {
       marker.group.visible = visible;
+      marker.billboardSprite.visible = visible && showVehicleBadgesRef.current;
       if (!visible) return;
 
       const pt = curve.getPointAt(progress);
       const tangent = curve.getTangentAt(progress);
       marker.group.position.copy(pt);
       marker.group.lookAt(pt.clone().add(tangent));
+
+      // Hover billboard badge above vehicle in world space with altitude separation
+      const yOffset = marker.iconType === 'plane' ? 0.72 : 0.52;
+      marker.billboardSprite.position.set(pt.x, pt.y + yOffset, pt.z);
 
       marker.tailSpheres.forEach((ts, idx) => {
         const backT = Math.max(0, progress - (idx + 1) * 0.022);
@@ -632,29 +1104,29 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
 
       const p = gsapProgressRef.current;
 
-      // Visibility sync
-      railLineGroup.visible = showRail;
-      roadLineGroup.visible = showRoad;
-      maritimeLineGroup.visible = showMaritime;
-      airLineGroup.visible = showAir;
+      // Visibility sync using refs
+      railLineGroup.visible = showRailRef.current;
+      roadLineGroup.visible = showRoadRef.current;
+      maritimeLineGroup.visible = showMaritimeRef.current;
+      airLineGroup.visible = showAirRef.current;
 
       // 1. Update Rail Light-Trails
-      updateTrailMarker(railTrailWestern, arcWesternDfc, p.railWesternDfc, showRail);
-      updateTrailMarker(railTrailEastern, arcEasternDfc, p.railEasternDfc, showRail);
+      updateTrailMarker(railTrailWestern, arcWesternDfc, p.railWesternDfc, showRailRef.current);
+      updateTrailMarker(railTrailEastern, arcEasternDfc, p.railEasternDfc, showRailRef.current);
 
-      // 2. Update Road Light-Trails (Golden Quadrilateral)
-      updateTrailMarker(roadTrailDelhiMumbai, arcRoadDelhiMumbai, p.roadDelhiMumbai, showRoad);
-      updateTrailMarker(roadTrailMumbaiChennai, arcRoadMumbaiChennai, p.roadMumbaiChennai, showRoad);
-      updateTrailMarker(roadTrailChennaiKolkata, arcRoadChennaiKolkata, p.roadChennaiKolkata, showRoad);
-      updateTrailMarker(roadTrailKolkataDelhi, arcRoadKolkataDelhi, p.roadKolkataDelhi, showRoad);
+      // 2. Update Road Light-Trails (Golden Quadrilateral Trucks)
+      updateTrailMarker(roadTrailDelhiMumbai, arcRoadDelhiMumbai, p.roadDelhiMumbai, showRoadRef.current);
+      updateTrailMarker(roadTrailMumbaiChennai, arcRoadMumbaiChennai, p.roadMumbaiChennai, showRoadRef.current);
+      updateTrailMarker(roadTrailChennaiKolkata, arcRoadChennaiKolkata, p.roadChennaiKolkata, showRoadRef.current);
+      updateTrailMarker(roadTrailKolkataDelhi, arcRoadKolkataDelhi, p.roadKolkataDelhi, showRoadRef.current);
 
       // 3. Update Maritime Light-Trails
-      updateTrailMarker(maritimeTrailWest, arcMaritimeWestCoast, p.maritimeWestCoast, showMaritime);
-      updateTrailMarker(maritimeTrailEast, arcMaritimeEastCoast, p.maritimeEastCoast, showMaritime);
+      updateTrailMarker(maritimeTrailWest, arcMaritimeWestCoast, p.maritimeWestCoast, showMaritimeRef.current);
+      updateTrailMarker(maritimeTrailEast, arcMaritimeEastCoast, p.maritimeEastCoast, showMaritimeRef.current);
 
-      // 4. Update Air Light-Trails
-      updateTrailMarker(airTrailDelBlr, arcAirDelBlr, p.airDelBlr, showAir);
-      updateTrailMarker(airTrailBomHyd, arcAirBomHyd, p.airBomHyd, showAir);
+      // 4. Update Air Light-Trails (Cargo Flights)
+      updateTrailMarker(airTrailDelBlr, arcAirDelBlr, p.airDelBlr, showAirRef.current);
+      updateTrailMarker(airTrailBomHyd, arcAirBomHyd, p.airBomHyd, showAirRef.current);
 
       // 5. Update Pulsing Base Rings at Transit Hubs
       const rScale = 1 + p.pulseCycle * 3.4;
@@ -688,15 +1160,18 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
       container.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      disposables.forEach((d) => {
+        try { d.dispose(); } catch (e) {}
+      });
       renderer.dispose();
       if (container) container.innerHTML = '';
     };
-  }, [viewMode, showRail, showRoad, showMaritime, showAir]);
+  }, [viewMode]);
 
   return (
     <div className="relative w-full h-full bg-[#060c18] rounded-xl overflow-hidden border border-[#142032] shadow-inner select-none">
       {/* Top Header Controls with Multi-Modal Modality Filter Toggles */}
-      <div className="absolute top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+      <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Title Badge */}
         <div className="pointer-events-auto px-3 py-1 rounded-full bg-[#0d1624]/90 backdrop-blur-md border border-[#1e2d42] text-xs font-semibold text-white flex items-center gap-2 shadow-lg">
           <Zap className="w-3.5 h-3.5 text-[#22d3ee] animate-pulse" />
@@ -743,6 +1218,17 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
           >
             <Plane className="w-3 h-3" />
             <span>Air Cargo</span>
+          </button>
+
+          <button
+            onClick={() => setShowVehicleBadges(!showVehicleBadges)}
+            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+              showVehicleBadges ? 'bg-[#38bdf8] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
+            }`}
+            title="Toggle Live Vehicle Telemetry Badges (Flight & Truck Images)"
+          >
+            <Tag className="w-3 h-3" />
+            <span>Vehicle HUD</span>
           </button>
         </div>
 

@@ -1,0 +1,211 @@
+{
+  "nodes": [
+    {
+      "id": "SUP-IND-183",
+      "label": "Sanand Advanced Powertrain Systems",
+      "type": "Supplier",
+      "location": "Sanand Industrial Estate, Gujarat",
+      "risk": 99.9,
+      "capacity": 2400,
+      "single_source": true
+    },
+    {
+      "id": "SUP-IND-104",
+      "label": "Bengaluru Precision Semiconductors & Modules",
+      "type": "Supplier",
+      "location": "Electronic City Phase II, Bengaluru",
+      "risk": 0.1,
+      "capacity": 4500,
+      "single_source": false
+    },
+    {
+      "id": "SUP-IND-101",
+      "label": "Sriperumbudur Auto Electric Components",
+      "type": "Supplier",
+      "location": "SIPCOT Industrial Park, Sriperumbudur, Tamil Nadu",
+      "risk": 0.6,
+      "capacity": 3200,
+      "single_source": false
+    },
+    {
+      "id": "SUP-IND-106",
+      "label": "Pune Stamping & Chassis Fabricators",
+      "type": "Supplier",
+      "location": "MIDC Bhosari, Pune, Maharashtra",
+      "risk": 99.8,
+      "capacity": 1800,
+      "single_source": false
+    },
+    {
+      "id": "SUP-IND-105",
+      "label": "Gurugram Sensor & Telematics Labs",
+      "type": "Supplier",
+      "location": "Udyog Vihar Phase IV, Gurugram, Haryana",
+      "risk": 0.1,
+      "capacity": 2900,
+      "single_source": false
+    },
+    {
+      "id": "FAC-IND-201",
+      "label": "Pune MegaFactory Alpha (Chakan Cluster)",
+      "type": "Factory",
+      "location": "Chakan Industrial Area, Pune, Maharashtra",
+      "lat": 18.7606,
+      "lng": 73.8636,
+      "capacity": 4500,
+      "status": "Bottleneck Risk"
+    },
+    {
+      "id": "FAC-IND-202",
+      "label": "Chennai Southern Assembly Plant",
+      "type": "Factory",
+      "location": "Oragadam Industrial Corridor, Chennai, Tamil Nadu",
+      "lat": 12.8342,
+      "lng": 79.9575,
+      "capacity": 3800,
+      "status": "Operational"
+    },
+    {
+      "id": "FAC-IND-204",
+      "label": "Manesar Northern Assembly Plant",
+      "type": "Factory",
+      "location": "IMT Manesar, Gurugram, Haryana",
+      "lat": 28.3588,
+      "lng": 76.9378,
+      "capacity": 3200,
+      "status": "Operational"
+    },
+    {
+      "id": "PRT-IND-01",
+      "label": "Jawaharlal Nehru Port Authority (JNPT / Nhava Sheva)",
+      "type": "Port",
+      "location": "Navi Mumbai, Maharashtra",
+      "lat": 18.9499,
+      "lng": 72.9511,
+      "status": "Normal Flow"
+    },
+    {
+      "id": "PRT-IND-02",
+      "label": "Mundra Deepwater Multipurpose Port",
+      "type": "Port",
+      "location": "Kutch, Gujarat",
+      "lat": 22.7441,
+      "lng": 69.7049,
+      "status": "Normal Flow"
+    },
+    {
+      "id": "PRT-IND-03",
+      "label": "Chennai Port Trust & Ennore Gateway",
+      "type": "Port",
+      "location": "Chennai, Tamil Nadu",
+      "lat": 13.0827,
+      "lng": 80.2937,
+      "status": "Moderate Congestion"
+    },
+    {
+      "id": "WH-IND-01",
+      "label": "Bhiwandi Central Fulfillment Mega-Hub",
+      "type": "Warehouse",
+      "location": "Bhiwandi Logistics Hub, Thane, Maharashtra",
+      "lat": 19.2967,
+      "lng": 73.0631,
+      "capacity": 42000
+    },
+    {
+      "id": "WH-IND-02",
+      "label": "Bengaluru Aerospace & High-Tech DC",
+      "type": "Warehouse",
+      "location": "Devanahalli Logistics Park, Bengaluru, Karnataka",
+      "lat": 13.2417,
+      "lng": 77.7126,
+      "capacity": 28000
+    },
+    {
+      "id": "WH-IND-03",
+      "label": "Delhi-NCR Kundli Multi-Modal Terminal",
+      "type": "Warehouse",
+      "location": "Kundli Industrial Zone, Sonipat, Haryana",
+      "lat": 28.8719,
+      "lng": 77.1264,
+      "capacity": 35000
+    }
+  ],
+  "links": [
+    {
+      "source": "SUP-IND-183",
+      "target": "FAC-IND-201",
+      "relation": "SUPPLIES",
+      "component": "IGBT Inverter",
+      "critical": true,
+      "corridor": "NH48 Western Corridor"
+    },
+    {
+      "source": "SUP-IND-104",
+      "target": "FAC-IND-201",
+      "relation": "SUPPLIES",
+      "component": "BMS Microcontrollers",
+      "critical": true,
+      "corridor": "Western DFC Rail"
+    },
+    {
+      "source": "SUP-IND-101",
+      "target": "FAC-IND-202",
+      "relation": "SUPPLIES",
+      "component": "Wiring Harness",
+      "critical": true,
+      "corridor": "Chennai Expressway"
+    },
+    {
+      "source": "SUP-IND-106",
+      "target": "FAC-IND-201",
+      "relation": "SUPPLIES",
+      "component": "Chassis Sub-frames",
+      "critical": false,
+      "corridor": "Pune Local Road"
+    },
+    {
+      "source": "SUP-IND-105",
+      "target": "FAC-IND-204",
+      "relation": "SUPPLIES",
+      "component": "ADAS Sensors",
+      "critical": false,
+      "corridor": "Delhi-NCR Expressway"
+    },
+    {
+      "source": "FAC-IND-201",
+      "target": "WH-IND-01",
+      "relation": "FULFILLS",
+      "corridor": "Bhiwandi Hub Link"
+    },
+    {
+      "source": "FAC-IND-202",
+      "target": "WH-IND-02",
+      "relation": "FULFILLS",
+      "corridor": "Bengaluru Airport DC Link"
+    },
+    {
+      "source": "FAC-IND-204",
+      "target": "WH-IND-03",
+      "relation": "FULFILLS",
+      "corridor": "Kundli Terminal Link"
+    },
+    {
+      "source": "PRT-IND-01",
+      "target": "WH-IND-01",
+      "relation": "ROUTES_THROUGH",
+      "corridor": "Nhava Sheva Rail"
+    },
+    {
+      "source": "PRT-IND-02",
+      "target": "FAC-IND-201",
+      "relation": "ROUTES_THROUGH",
+      "corridor": "Western DFC Link"
+    }
+  ],
+  "metrics": {
+    "total_nodes": 14,
+    "total_edges": 10,
+    "density": 0.0549,
+    "is_directed_acyclic": true
+  }
+}

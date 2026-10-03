@@ -1,0 +1,35 @@
+{
+  "timestamp": "LIVE",
+  "overallDriftStatus": "WARNING",
+  "driftMetrics": [
+    {
+      "feature": "Shipment Transit Duration (NH48)",
+      "ks_statistic": 0.1415,
+      "p_value": 0.0,
+      "status": "DRIFT DETECTED",
+      "impact": "Monsoon ghat congestion elevating right-tail delays"
+    },
+    {
+      "feature": "Daily SKU Demand Volume",
+      "ks_statistic": 0.0945,
+      "p_value": 0.0115,
+      "status": "WARNING",
+      "impact": "Festive ramp within acceptable quantile bounds"
+    },
+    {
+      "feature": "Supplier Component Lead-Times",
+      "ks_statistic": 0.033,
+      "p_value": 0.9065,
+      "status": "NORMAL",
+      "impact": "Tier-1 dispatch intervals stable"
+    },
+    {
+      "feature": "Forecast Residual Distribution",
+      "ks_statistic": 0.0875,
+      "p_value": 0.024,
+      "status": "WARNING",
+      "impact": "Error variance within 95% confidence interval"
+    }
+  ],
+  "recommendedAction": "Monitor Khandala Ghat route telemetry. Schedule model retrain cycle in 14 days."
+}

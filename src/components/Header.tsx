@@ -8,12 +8,37 @@ interface HeaderProps {
   onOpenAI: () => void;
   activeTab: string;
   onSelectEntity?: (entity: any) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  onOpenLogin?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onOpenAI, onSelectEntity }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  searchQuery, 
+  setSearchQuery, 
+  onOpenAI, 
+  onSelectEntity,
+  currentUser,
+  onLogout,
+  onOpenLogin
+}) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Click outside to dismiss dropdowns
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.header-dropdown-container')) {
+        setShowNotifications(false);
+        setShowSettings(false);
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Search filtering
   const filteredSuppliers = indianSuppliers.filter(s => 
@@ -30,8 +55,12 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
 
   const hasSearchResults = searchQuery.trim().length > 0;
 
+  const initials = currentUser?.fullName
+    ? currentUser.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'SC';
+
   return (
-    <header className="h-14 px-6 bg-[#060910] border-b border-[#131d2c] flex items-center justify-between shrink-0 relative z-30">
+    <header className="h-14 px-6 bg-[#060910] border-b border-[#131d2c] flex items-center justify-between shrink-0 relative z-50">
       {/* Search Input with Live Dropdown */}
       <div className="w-84 relative">
         <div className="relative">
@@ -108,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
         </div>
 
         {/* Notifications Bell */}
-        <div className="relative">
+        <div className="relative header-dropdown-container">
           <button 
             onClick={() => {
               setShowNotifications(!showNotifications);
@@ -126,10 +155,19 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 top-9 w-80 bg-[#0b1322] border border-[#1e2d42] rounded-xl p-3 shadow-2xl z-50">
-              <div className="flex items-center justify-between pb-2 border-b border-[#162438] mb-2">
-                <span className="text-xs font-bold text-white">Active Operational Alerts (3)</span>
-                <span className="text-[10px] text-[#38bdf8] font-mono">IST (UTC+5:30)</span>
+            <div className="absolute right-0 top-11 w-84 bg-[#0b1322] border border-[#1e2d42] rounded-xl p-3.5 shadow-2xl z-50 ring-1 ring-black/60">
+              <div className="flex items-center justify-between pb-2 border-b border-[#162438] mb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white">Active Operational Alerts (3)</span>
+                  <span className="text-[10px] text-[#38bdf8] font-mono">IST (UTC+5:30)</span>
+                </div>
+                <button 
+                  onClick={() => setShowNotifications(false)}
+                  className="p-1 rounded text-[#64748b] hover:text-white hover:bg-[#162438] cursor-pointer"
+                  title="Close alerts"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
               <div className="space-y-2">
                 {indianDisruptions.slice(0, 3).map((d) => (
@@ -148,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
                   setShowNotifications(false);
                   onOpenAI();
                 }}
-                className="w-full mt-2.5 py-1.5 rounded-lg bg-[#1e60f2] text-white text-xs font-semibold hover:bg-[#194ec7] transition-all"
+                className="w-full mt-2.5 py-1.5 rounded-lg bg-[#1e60f2] text-white text-xs font-semibold hover:bg-[#194ec7] transition-all cursor-pointer"
               >
                 Run AI Disruption Analysis
               </button>
@@ -157,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
         </div>
 
         {/* Settings Icon */}
-        <div className="relative">
+        <div className="relative header-dropdown-container">
           <button 
             onClick={() => {
               setShowSettings(!showSettings);
@@ -172,8 +210,16 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
 
           {/* Settings Dropdown */}
           {showSettings && (
-            <div className="absolute right-0 top-9 w-64 bg-[#0b1322] border border-[#1e2d42] rounded-xl p-3 shadow-2xl z-50 text-left">
-              <div className="text-xs font-bold text-white mb-2">Regional Preferences</div>
+            <div className="absolute right-0 top-11 w-64 bg-[#0b1322] border border-[#1e2d42] rounded-xl p-3 shadow-2xl z-50 text-left ring-1 ring-black/60">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-white">Regional Preferences</span>
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="p-1 rounded text-[#64748b] hover:text-white hover:bg-[#162438] cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <div className="space-y-2 text-xs text-[#94a3b8]">
                 <div className="flex justify-between items-center p-1.5 rounded bg-[#0e1726]">
                   <span>Currency Format</span>
@@ -187,13 +233,17 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
                   <span>GST e-Way Bill Auto-Sync</span>
                   <span className="text-[#22c55e] font-bold">Active</span>
                 </div>
+                <div className="flex justify-between items-center p-1.5 rounded bg-[#0e1726]">
+                  <span>Database Engine</span>
+                  <span className="text-[#38bdf8] font-mono">SQLite (WAL) / Postgres</span>
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Indian User Profile */}
-        <div className="relative">
+        {/* User Profile & Auth Menu */}
+        <div className="relative header-dropdown-container">
           <div 
             onClick={() => {
               setShowUserMenu(!showUserMenu);
@@ -203,25 +253,57 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onO
             className="flex items-center gap-2.5 pl-2 cursor-pointer hover:opacity-90"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#1e60f2] to-[#06b6d4] flex items-center justify-center font-bold text-white text-xs border border-[#2563eb]/50">
-              RS
+              {initials}
             </div>
             <div className="text-left hidden sm:block">
-              <p className="text-xs font-semibold text-white leading-tight">Rishi Sathiyamoorthi</p>
-              <p className="text-[10px] text-[#708098] leading-tight">Head of Supply Chain (India)</p>
+              <p className="text-xs font-semibold text-white leading-tight">
+                {currentUser?.fullName || currentUser?.username || 'Logistics Commander'}
+              </p>
+              <p className="text-[10px] text-[#708098] leading-tight">
+                {currentUser?.role || 'Supply Officer'}
+              </p>
             </div>
           </div>
 
           {/* User Menu Dropdown */}
           {showUserMenu && (
-            <div className="absolute right-0 top-9 w-56 bg-[#0b1322] border border-[#1e2d42] rounded-xl p-2.5 shadow-2xl z-50 text-left">
+            <div className="absolute right-0 top-9 w-60 bg-[#0b1322] border border-[#1e2d42] rounded-xl p-2.5 shadow-2xl z-50 text-left">
               <div className="px-2 py-1.5 border-b border-[#162438] mb-1.5">
-                <p className="text-xs font-bold text-white">Rishi Sathiyamoorthi</p>
-                <p className="text-[10px] text-[#38bdf8]">rishisathiyamoorthi@gmail.com</p>
+                <p className="text-xs font-bold text-white">{currentUser?.fullName || currentUser?.username || 'Strategic Commander'}</p>
+                <p className="text-[10px] text-[#38bdf8]">{currentUser?.email || 'commander@supplyintel.ai'}</p>
+                <span className="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#1e293b] text-[9px] text-[#22c55e] font-mono">
+                  {currentUser?.role || 'Operations Director'}
+                </span>
               </div>
               <div className="space-y-1 text-xs text-[#94a3b8]">
-                <div className="p-1.5 rounded hover:bg-[#0e1726] text-[#e2e8f0] cursor-pointer">Operations Center: Mumbai HQ</div>
-                <div className="p-1.5 rounded hover:bg-[#0e1726] text-[#e2e8f0] cursor-pointer">Plants: Pune, Chennai, Sanand</div>
-                <div className="p-1.5 rounded hover:bg-[#0e1726] text-[#e2e8f0] cursor-pointer">Role: Executive Director</div>
+                <div className="p-1.5 rounded hover:bg-[#0e1726] text-[#e2e8f0] cursor-pointer">
+                  Security Clearance: Level 5
+                </div>
+                <div className="p-1.5 rounded hover:bg-[#0e1726] text-[#e2e8f0] cursor-pointer">
+                  Data Mode: Live Replay
+                </div>
+                {onOpenLogin && (
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onOpenLogin();
+                    }}
+                    className="w-full text-left p-1.5 rounded hover:bg-[#162235] text-[#38bdf8] cursor-pointer font-medium"
+                  >
+                    Switch Account / Re-login
+                  </button>
+                )}
+                {onLogout && (
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onLogout();
+                    }}
+                    className="w-full text-left p-1.5 rounded hover:bg-red-950/40 text-red-400 cursor-pointer font-medium border-t border-[#162438] mt-1 pt-1"
+                  >
+                    Sign Out
+                  </button>
+                )}
               </div>
             </div>
           )}
