@@ -1168,123 +1168,129 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
     };
   }, [viewMode]);
 
+  const viewModeSwitcher = (
+    <div className="flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-xl">
+      <button
+        onClick={() => setViewMode('3d-globe')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+          viewMode === '3d-globe'
+            ? 'bg-[#1e60f2] text-white shadow-md'
+            : 'text-[#94a3b8] hover:text-white'
+        }`}
+      >
+        <Globe className="w-3.5 h-3.5" />
+        <span>3D Light-Trails</span>
+      </button>
+
+      <button
+        onClick={() => setViewMode('mapbox')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+          viewMode === 'mapbox'
+            ? 'bg-[#1e60f2] text-white shadow-md'
+            : 'text-[#94a3b8] hover:text-white'
+        }`}
+      >
+        <Map className="w-3.5 h-3.5" />
+        <span>Mapbox Layer</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="relative w-full h-full bg-[#060c18] rounded-xl overflow-hidden border border-[#142032] shadow-inner select-none">
-      {/* Top Header Controls with Multi-Modal Modality Filter Toggles */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        {/* Title Badge */}
-        <div className="pointer-events-auto px-3 py-1 rounded-full bg-[#0d1624]/90 backdrop-blur-md border border-[#1e2d42] text-xs font-semibold text-white flex items-center gap-2 shadow-lg">
-          <Zap className="w-3.5 h-3.5 text-[#22d3ee] animate-pulse" />
-          <span>Multi-Modal Light-Trail Transit (Rail • Road • Maritime • Air)</span>
-        </div>
+      {/* Top Header Controls with Multi-Modal Modality Filter Toggles (Only when 3D Globe is active) */}
+      {viewMode === '3d-globe' && (
+        <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          {/* Title Badge */}
+          <div className="pointer-events-auto px-3 py-1 rounded-full bg-[#0d1624]/90 backdrop-blur-md border border-[#1e2d42] text-xs font-semibold text-white flex items-center gap-2 shadow-lg">
+            <Zap className="w-3.5 h-3.5 text-[#22d3ee] animate-pulse" />
+            <span>Multi-Modal Light-Trail Transit (Rail • Road • Maritime • Air)</span>
+          </div>
 
-        {/* Modality Toggles Toolbar */}
-        <div className="pointer-events-auto flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
-          <button
-            onClick={() => setShowRail(!showRail)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showRail ? 'bg-[#22d3ee] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <Train className="w-3 h-3" />
-            <span>DFC Rail</span>
-          </button>
-
-          <button
-            onClick={() => setShowRoad(!showRoad)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showRoad ? 'bg-[#f59e0b] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <Truck className="w-3 h-3" />
-            <span>Golden Quad</span>
-          </button>
-
-          <button
-            onClick={() => setShowMaritime(!showMaritime)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showMaritime ? 'bg-[#f43f5e] text-white font-bold' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <Ship className="w-3 h-3" />
-            <span>Maritime</span>
-          </button>
-
-          <button
-            onClick={() => setShowAir(!showAir)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showAir ? 'bg-[#a855f7] text-white font-bold' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <Plane className="w-3 h-3" />
-            <span>Air Cargo</span>
-          </button>
-
-          <button
-            onClick={() => setShowVehicleBadges(!showVehicleBadges)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showVehicleBadges ? 'bg-[#38bdf8] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
-            }`}
-            title="Toggle Live Vehicle Telemetry Badges (Flight & Truck Images)"
-          >
-            <Tag className="w-3 h-3" />
-            <span>Vehicle HUD</span>
-          </button>
-        </div>
-
-        {/* GSAP Playback & View Mode Toolbar */}
-        <div className="pointer-events-auto flex items-center gap-1.5">
-          {viewMode === '3d-globe' && (
-            <div className="flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
+          <div className="flex items-center gap-2 flex-wrap pointer-events-none">
+            {/* Modality Toggles Toolbar */}
+            <div className="pointer-events-auto flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
               <button
-                onClick={() => setIs3DPlaying(!is3DPlaying)}
-                className="p-1.5 rounded-lg bg-[#152338] text-[#38bdf8] hover:text-white cursor-pointer"
-                title={is3DPlaying ? 'Pause GSAP Simulation' : 'Play GSAP Simulation'}
+                onClick={() => setShowRail(!showRail)}
+                className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                  showRail ? 'bg-[#22d3ee] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
+                }`}
               >
-                {is3DPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
+                <Train className="w-3 h-3" />
+                <span>DFC Rail</span>
               </button>
 
-              {[1, 2, 5].map((speed) => (
-                <button
-                  key={speed}
-                  onClick={() => setSimSpeed(speed)}
-                  className={`px-2 py-1 rounded-lg font-mono font-bold transition-all cursor-pointer ${
-                    simSpeed === speed ? 'bg-[#1e60f2] text-white' : 'text-[#64748b] hover:text-white'
-                  }`}
-                >
-                  {speed}x
-                </button>
-              ))}
+              <button
+                onClick={() => setShowRoad(!showRoad)}
+                className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                  showRoad ? 'bg-[#f59e0b] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
+                }`}
+              >
+                <Truck className="w-3 h-3" />
+                <span>Golden Quad</span>
+              </button>
+
+              <button
+                onClick={() => setShowMaritime(!showMaritime)}
+                className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                  showMaritime ? 'bg-[#f43f5e] text-white font-bold' : 'text-[#64748b] hover:text-white'
+                }`}
+              >
+                <Ship className="w-3 h-3" />
+                <span>Maritime</span>
+              </button>
+
+              <button
+                onClick={() => setShowAir(!showAir)}
+                className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                  showAir ? 'bg-[#a855f7] text-white font-bold' : 'text-[#64748b] hover:text-white'
+                }`}
+              >
+                <Plane className="w-3 h-3" />
+                <span>Air Cargo</span>
+              </button>
+
+              <button
+                onClick={() => setShowVehicleBadges(!showVehicleBadges)}
+                className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                  showVehicleBadges ? 'bg-[#38bdf8] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
+                }`}
+                title="Toggle Live Vehicle Telemetry Badges (Flight & Truck Images)"
+              >
+                <Tag className="w-3 h-3" />
+                <span>Vehicle HUD</span>
+              </button>
             </div>
-          )}
 
-          <div className="flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-xl">
-            <button
-              onClick={() => setViewMode('3d-globe')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === '3d-globe'
-                  ? 'bg-[#1e60f2] text-white shadow-md'
-                  : 'text-[#94a3b8] hover:text-white'
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>3D Light-Trails</span>
-            </button>
+            {/* GSAP Playback & View Mode Toolbar */}
+            <div className="pointer-events-auto flex items-center gap-1.5">
+              <div className="flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
+                <button
+                  onClick={() => setIs3DPlaying(!is3DPlaying)}
+                  className="p-1.5 rounded-lg bg-[#152338] text-[#38bdf8] hover:text-white cursor-pointer"
+                  title={is3DPlaying ? 'Pause GSAP Simulation' : 'Play GSAP Simulation'}
+                >
+                  {is3DPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
+                </button>
 
-            <button
-              onClick={() => setViewMode('mapbox')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'mapbox'
-                  ? 'bg-[#1e60f2] text-white shadow-md'
-                  : 'text-[#94a3b8] hover:text-white'
-              }`}
-            >
-              <Map className="w-3.5 h-3.5" />
-              <span>Mapbox Layer</span>
-            </button>
+                {[1, 2, 5].map((speed) => (
+                  <button
+                    key={speed}
+                    onClick={() => setSimSpeed(speed)}
+                    className={`px-2 py-1 rounded-lg font-mono font-bold transition-all cursor-pointer ${
+                      simSpeed === speed ? 'bg-[#1e60f2] text-white' : 'text-[#64748b] hover:text-white'
+                    }`}
+                  >
+                    {speed}x
+                  </button>
+                ))}
+              </div>
+
+              {viewModeSwitcher}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Render Active View Layer */}
       {viewMode === '3d-globe' ? (
@@ -1408,7 +1414,7 @@ export const GlobalGlobe3D: React.FC<GlobalGlobe3DProps> = ({ onSelectNode }) =>
           )}
         </div>
       ) : (
-        <MapboxIndiaInfrastructure onSelectNode={onSelectNode} />
+        <MapboxIndiaInfrastructure onSelectNode={onSelectNode} headerRight={viewModeSwitcher} />
       )}
     </div>
   );

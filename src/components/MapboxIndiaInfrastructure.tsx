@@ -20,9 +20,10 @@ import {
 interface MapboxIndiaProps {
   onSelectNode?: (node: any) => void;
   selectedNodeId?: string;
+  headerRight?: React.ReactNode;
 }
 
-export const MapboxIndiaInfrastructure: React.FC<MapboxIndiaProps> = ({ onSelectNode }) => {
+export const MapboxIndiaInfrastructure: React.FC<MapboxIndiaProps> = ({ onSelectNode, headerRight }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedEntity, setSelectedEntity] = useState<any | null>(null);
   const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
@@ -545,70 +546,80 @@ export const MapboxIndiaInfrastructure: React.FC<MapboxIndiaProps> = ({ onSelect
           <span>GSAP Real-Time Corridor Cargo Simulation</span>
         </div>
 
-        {/* GSAP Playback & Simulation Speed Controls */}
-        <div className="pointer-events-auto flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="p-1.5 rounded-lg bg-[#152338] text-[#38bdf8] hover:text-white cursor-pointer"
-            title={isPlaying ? 'Pause GSAP Simulation' : 'Play GSAP Simulation'}
-          >
-            {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
-          </button>
-
-          {[1, 2, 5].map((speed) => (
+        {/* Right Controls Container */}
+        <div className="flex items-center gap-2 flex-wrap pointer-events-none">
+          {/* GSAP Playback & Simulation Speed Controls */}
+          <div className="pointer-events-auto flex items-center gap-1 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
             <button
-              key={speed}
-              onClick={() => setSimulationSpeed(speed)}
-              className={`px-2 py-1 rounded-lg font-mono font-bold transition-all cursor-pointer ${
-                simulationSpeed === speed ? 'bg-[#1e60f2] text-white' : 'text-[#64748b] hover:text-white'
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="p-1.5 rounded-lg bg-[#152338] text-[#38bdf8] hover:text-white cursor-pointer"
+              title={isPlaying ? 'Pause GSAP Simulation' : 'Play GSAP Simulation'}
+            >
+              {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
+            </button>
+
+            {[1, 2, 5].map((speed) => (
+              <button
+                key={speed}
+                onClick={() => setSimulationSpeed(speed)}
+                className={`px-2 py-1 rounded-lg font-mono font-bold transition-all cursor-pointer ${
+                  simulationSpeed === speed ? 'bg-[#1e60f2] text-white' : 'text-[#64748b] hover:text-white'
+                }`}
+              >
+                {speed}x
+              </button>
+            ))}
+          </div>
+
+          {/* Layer Filter Toggles */}
+          <div className="pointer-events-auto flex items-center gap-1.5 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
+            <button
+              onClick={() => setShowHighways(!showHighways)}
+              className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                showHighways ? 'bg-[#0284c7] text-white' : 'text-[#64748b] hover:text-white'
               }`}
             >
-              {speed}x
+              <Truck className="w-3 h-3" />
+              <span>Golden Quad</span>
             </button>
-          ))}
-        </div>
 
-        {/* Layer Filter Toggles */}
-        <div className="pointer-events-auto flex items-center gap-1.5 bg-[#09101c]/90 backdrop-blur-md border border-[#162438] p-1 rounded-xl shadow-lg text-[10px]">
-          <button
-            onClick={() => setShowHighways(!showHighways)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showHighways ? 'bg-[#0284c7] text-white' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <Truck className="w-3 h-3" />
-            <span>Golden Quad</span>
-          </button>
+            <button
+              onClick={() => setShowDFCRail(!showDFCRail)}
+              className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                showDFCRail ? 'bg-[#10b981] text-white' : 'text-[#64748b] hover:text-white'
+              }`}
+            >
+              <Train className="w-3 h-3" />
+              <span>DFC Rail</span>
+            </button>
 
-          <button
-            onClick={() => setShowDFCRail(!showDFCRail)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showDFCRail ? 'bg-[#10b981] text-white' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <Train className="w-3 h-3" />
-            <span>DFC Rail</span>
-          </button>
+            <button
+              onClick={() => setShowPorts(!showPorts)}
+              className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                showPorts ? 'bg-[#22d3ee] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
+              }`}
+            >
+              <Ship className="w-3 h-3" />
+              <span>Ports</span>
+            </button>
 
-          <button
-            onClick={() => setShowPorts(!showPorts)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showPorts ? 'bg-[#22d3ee] text-[#060c18] font-bold' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <Ship className="w-3 h-3" />
-            <span>Ports</span>
-          </button>
+            <button
+              onClick={() => setShowTransitNodes(!showTransitNodes)}
+              className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                showTransitNodes ? 'bg-[#f43f5e] text-white' : 'text-[#64748b] hover:text-white'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+              <span>Live Cargo Nodes</span>
+            </button>
+          </div>
 
-          <button
-            onClick={() => setShowTransitNodes(!showTransitNodes)}
-            className={`px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              showTransitNodes ? 'bg-[#f43f5e] text-white' : 'text-[#64748b] hover:text-white'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-            <span>Live Cargo Nodes</span>
-          </button>
+          {/* View Mode Switcher Slot */}
+          {headerRight && (
+            <div className="pointer-events-auto">
+              {headerRight}
+            </div>
+          )}
         </div>
       </div>
 
